@@ -295,7 +295,6 @@
 // });
 
 
-
 import React, { useState, useRef } from 'react';
 import {
   View,
@@ -452,7 +451,7 @@ Question: ${question}
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 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',
+          'Authorization': 'Bearer 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',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({

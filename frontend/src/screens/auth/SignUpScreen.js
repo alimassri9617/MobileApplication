@@ -1,466 +1,328 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
-  StyleSheet,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
+  FlatList,
 } from 'react-native';
-import { TextInput, Button, RadioButton, Chip } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
-import Toast from 'react-native-toast-message';
-import { colors, spacing, typography } from '../../constants/theme';
+import { Button, Checkbox, RadioButton, List } from 'react-native-paper';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import dayjs from 'dayjs';
+import useSignup from '../../hooks/useSignup';
 
-export default function SignUpScreen() {
-  const [formData, setFormData] = useState({
+const departments = [
+  'Computer and Communications Engineering',
+  'Technology in Computer Science',
+  'Human Resource Management',
+  'Economics',
+  'Accounting, Control, and Auditing',
+  'Banking and Finance',
+  'Marketing and Management',
+  'Nursing Sciences',
+  'Dental Laboratory Technology',
+  'Physical Therapy',
+  'Communication and Journalism',
+  'Audiovisual',
+  'Graphic Design and Advertising',
+  'Music Therapy',
+  'European Art Music',
+  'General Musicology of Traditions and Arabic Art Music',
+  'Music Education Sciences and Music, Technology, and Media',
+  'Motricity Education and Adapted Physical Activities',
+  'Sports Training',
+  'Sports Management'
+];
+
+const SignUp = ({ navigation }) => {
+  const [inputs, setInputs] = useState({
+    uniId: '',
     firstName: '',
     lastName: '',
-    uniId: '',
     email: '',
     password: '',
     confirmPassword: '',
     gender: '',
-    role: 'student',
-    department: '',
-    phone: '',
+    role: '',
+    Department: '',
+    title: '',
+    major: '',
   });
 
-  const [loading, setLoading] = useState(false);
+  const [schedule, setSchedule] = useState([]);
+  const [currentSchedule, setCurrentSchedule] = useState({
+    day: 'Monday',
+    subject: '',
+    startTime: new Date(),
+    endTime: new Date(),
+    mode: 'campus',
+    room: '',
+  });
 
-  const departments = [
-    'Computer Science',
-    'Engineering',
-    'Business',
-    'Arts',
-    'Science',
-    'Medicine',
-    'Law',
-    'Education',
-  ];
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const { loading, signup } = useSignup();
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+  const handleScheduleChange = (field, value) => {
+    setCurrentSchedule(prev => ({
       ...prev,
       [field]: value,
+      room: field === 'mode' && value === 'online' ? 'Microsoft Teams' : prev.room,
     }));
   };
 
-  const validateForm = () => {
-    const { firstName, lastName, uniId, email, password, confirmPassword, gender } = formData;
+  const addScheduleEntry = () => {
+    const formattedEntry = {
+      ...currentSchedule,
+      startTime: dayjs(currentSchedule.startTime).format('hh:mm A'),
+      endTime: dayjs(currentSchedule.endTime).format('hh:mm A')
+    };
+    setSchedule(prev => [...prev, formattedEntry]);
+    setCurrentSchedule({ day: 'Monday', subject: '', startTime: new Date(), endTime: new Date(), mode: 'campus', room: '' });
+  };
 
-    if (!firstName.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: 'Validation Error',
-        text2: 'First name is required',
-      });
-      return false;
-    }
-
-    if (!lastName.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: 'Validation Error',
-        text2: 'Last name is required',
-      });
-      return false;
-    }
-
-    if (!uniId.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: 'Validation Error',
-        text2: 'University ID is required',
-      });
-      return false;
-    }
-
-    if (!email.trim() || !email.includes('@')) {
-      Toast.show({
-        type: 'error',
-        text1: 'Validation Error',
-        text2: 'Valid email is required',
-      });
-      return false;
-    }
-
-    if (password.length < 6) {
-      Toast.show({
-        type: 'error',
-        text1: 'Validation Error',
-        text2: 'Password must be at least 6 characters',
-      });
-      return false;
-    }
-
-    if (password !== confirmPassword) {
-      Toast.show({
-        type: 'error',
-        text1: 'Validation Error',
-        text2: 'Passwords do not match',
-      });
-      return false;
-    }
-
-    if (!gender) {
-      Toast.show({
-        type: 'error',
-        text1: 'Validation Error',
-        text2: 'Gender is required',
-      });
-      return false;
-    }
-
-    return true;
+  const removeScheduleEntry = index => {
+    setSchedule(schedule.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
-    if (!validateForm()) return;
-
-    setLoading(true);
-    try {
-      const res = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await res.json();
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: 'User registered successfully',
-      });
-
-      // Reset form
-      setFormData({
-        firstName: '',
-        lastName: '',
-        uniId: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-        gender: '',
-        role: 'student',
-        department: '',
-        phone: '',
-      });
-    } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Registration Failed',
-        text2: error.message,
-      });
-    } finally {
-      setLoading(false);
-    }
+    await signup({ ...inputs, schedule });
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <Ionicons name="person-add" size={48} color={colors.primary} />
-          <Text style={styles.title}>Register New User</Text>
-          <Text style={styles.subtitle}>Create a new account for the university system</Text>
-        </View>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Sign Up <Text style={{ color: '#ff2a1b' }}>ChatApp</Text></Text>
+      <View style={styles.form}>
+        <TextInput placeholder="University ID" style={styles.input} value={inputs.uniId} onChangeText={text => setInputs({ ...inputs, uniId: text })} />
+        <TextInput placeholder="First Name" style={styles.input} value={inputs.firstName} onChangeText={text => setInputs({ ...inputs, firstName: text })} />
+        <TextInput placeholder="Last Name" style={styles.input} value={inputs.lastName} onChangeText={text => setInputs({ ...inputs, lastName: text })} />
+        <TextInput placeholder="Email" keyboardType="email-address" style={styles.input} value={inputs.email} onChangeText={text => setInputs({ ...inputs, email: text })} />
+        <TextInput placeholder="Password" secureTextEntry style={styles.input} value={inputs.password} onChangeText={text => setInputs({ ...inputs, password: text })} />
+        <TextInput placeholder="Confirm Password" secureTextEntry style={styles.input} value={inputs.confirmPassword} onChangeText={text => setInputs({ ...inputs, confirmPassword: text })} />
 
-        <View style={styles.form}>
-          {/* Personal Information */}
-          <Text style={styles.sectionTitle}>Personal Information</Text>
-          
-          <View style={styles.row}>
-            <TextInput
-              label="First Name"
-              value={formData.firstName}
-              onChangeText={(text) => handleInputChange('firstName', text)}
-              mode="outlined"
-              style={[styles.input, styles.halfInput]}
-            />
-            <TextInput
-              label="Last Name"
-              value={formData.lastName}
-              onChangeText={(text) => handleInputChange('lastName', text)}
-              mode="outlined"
-              style={[styles.input, styles.halfInput]}
-            />
-          </View>
-
-          <TextInput
-            label="University ID"
-            value={formData.uniId}
-            onChangeText={(text) => handleInputChange('uniId', text)}
-            mode="outlined"
-            style={styles.input}
-            autoCapitalize="none"
-          />
-
-          <TextInput
-            label="Email"
-            value={formData.email}
-            onChangeText={(text) => handleInputChange('email', text)}
-            mode="outlined"
-            style={styles.input}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-
-          <TextInput
-            label="Phone (Optional)"
-            value={formData.phone}
-            onChangeText={(text) => handleInputChange('phone', text)}
-            mode="outlined"
-            style={styles.input}
-            keyboardType="phone-pad"
-          />
-
-          {/* Gender Selection */}
-          <Text style={styles.fieldLabel}>Gender</Text>
+        <Text style={styles.label}>Gender</Text>
+        <RadioButton.Group
+          onValueChange={(value) => setInputs({ ...inputs, gender: value })}
+          value={inputs.gender}
+        >
           <View style={styles.genderContainer}>
-            <TouchableOpacity
-              style={styles.genderOption}
-              onPress={() => handleInputChange('gender', 'male')}
-            >
-              <RadioButton
-                value="male"
-                status={formData.gender === 'male' ? 'checked' : 'unchecked'}
-                onPress={() => handleInputChange('gender', 'male')}
-              />
-              <Text style={styles.genderText}>Male</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.genderOption}
-              onPress={() => handleInputChange('gender', 'female')}
-            >
-              <RadioButton
-                value="female"
-                status={formData.gender === 'female' ? 'checked' : 'unchecked'}
-                onPress={() => handleInputChange('gender', 'female')}
-              />
-              <Text style={styles.genderText}>Female</Text>
-            </TouchableOpacity>
+            <View style={styles.genderItem}>
+              <RadioButton value="male" color="#117927" />
+              <Text>Male</Text>
+            </View>
+            <View style={styles.genderItem}>
+              <RadioButton value="female" color="#117927" />
+              <Text>Female</Text>
+            </View>
           </View>
+        </RadioButton.Group>
 
-          {/* Role Selection */}
-          <Text style={styles.fieldLabel}>Role</Text>
-          <View style={styles.roleContainer}>
-            <TouchableOpacity
-              style={styles.roleOption}
-              onPress={() => handleInputChange('role', 'student')}
-            >
-              <RadioButton
-                value="student"
-                status={formData.role === 'student' ? 'checked' : 'unchecked'}
-                onPress={() => handleInputChange('role', 'student')}
-              />
-              <Text style={styles.roleText}>Student</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.roleOption}
-              onPress={() => handleInputChange('role', 'staff')}
-            >
-              <RadioButton
-                value="staff"
-                status={formData.role === 'staff' ? 'checked' : 'unchecked'}
-                onPress={() => handleInputChange('role', 'staff')}
-              />
-              <Text style={styles.roleText}>Staff</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.roleOption}
-              onPress={() => handleInputChange('role', 'admin')}
-            >
-              <RadioButton
-                value="admin"
-                status={formData.role === 'admin' ? 'checked' : 'unchecked'}
-                onPress={() => handleInputChange('role', 'admin')}
-              />
-              <Text style={styles.roleText}>Admin</Text>
-            </TouchableOpacity>
+        <Text style={styles.label}>Role</Text>
+        <RadioButton.Group
+          onValueChange={(value) => setInputs({ ...inputs, role: value })}
+          value={inputs.role}
+        >
+          <View style={styles.genderContainer}>
+            <View style={styles.genderItem}>
+              <RadioButton value="student" color="#117927" />
+              <Text>Student</Text>
+            </View>
+            <View style={styles.genderItem}>
+              <RadioButton value="teacher" color="#117927" />
+              <Text>Teacher</Text>
+            </View>
+            <View style={styles.genderItem}>
+              <RadioButton value="admin" color="#117927" />
+              <Text>Admin</Text>
+            </View>
           </View>
+        </RadioButton.Group>
 
-          {/* Department Selection */}
-          <Text style={styles.fieldLabel}>Department</Text>
-          <View style={styles.departmentContainer}>
-            {departments.map((dept) => (
-              <Chip
-                key={dept}
-                selected={formData.department === dept}
-                onPress={() => handleInputChange('department', dept)}
-                style={[
-                  styles.departmentChip,
-                  formData.department === dept && styles.selectedDepartmentChip
-                ]}
-                textStyle={[
-                  styles.departmentChipText,
-                  formData.department === dept && styles.selectedDepartmentChipText
-                ]}
-              >
-                {dept}
-              </Chip>
-            ))}
-          </View>
+        <Text style={styles.label}>Department</Text>
+        <FlatList
+          data={departments}
+          renderItem={({ item }) => (
+            <TouchableOpacity onPress={() => setInputs({ ...inputs, Department: item })}>
+              <Text style={[styles.input, { color: inputs.Department === item ? '#117927' : '#000' }]}>{item}</Text>
+            </TouchableOpacity>
+          )}
+          keyExtractor={(item, index) => index.toString()}
+        />
 
-          {/* Password Section */}
-          <Text style={styles.sectionTitle}>Security</Text>
-          
+        {(inputs.role === 'teacher' || inputs.role === 'admin') && (
           <TextInput
-            label="Password"
-            value={formData.password}
-            onChangeText={(text) => handleInputChange('password', text)}
-            mode="outlined"
+            placeholder="Title (for teacher/admin)"
             style={styles.input}
-            secureTextEntry
-            autoCapitalize="none"
+            value={inputs.title}
+            onChangeText={(text) => setInputs({ ...inputs, title: text })}
           />
+        )}
 
+        {inputs.role === 'student' && (
           <TextInput
-            label="Confirm Password"
-            value={formData.confirmPassword}
-            onChangeText={(text) => handleInputChange('confirmPassword', text)}
-            mode="outlined"
+            placeholder="Major (for students)"
             style={styles.input}
-            secureTextEntry
-            autoCapitalize="none"
+            value={inputs.major}
+            onChangeText={(text) => setInputs({ ...inputs, major: text })}
           />
+        )}
 
-          <Button
-            mode="contained"
-            onPress={handleSubmit}
-            loading={loading}
-            disabled={loading}
-            style={styles.submitButton}
-            contentStyle={styles.submitButtonContent}
-          >
-            Register User
-          </Button>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        {inputs.role === 'student' && (
+          <>
+            <Text style={styles.sectionTitle}>Schedule Entry (Students Only)</Text>
+            <TextInput placeholder="Day" style={styles.input} value={currentSchedule.day} onChangeText={text => handleScheduleChange('day', text)} />
+            <TextInput placeholder="Subject" style={styles.input} value={currentSchedule.subject} onChangeText={text => handleScheduleChange('subject', text)} />
+
+            <TouchableOpacity onPress={() => setShowStartTimePicker(true)}>
+              <TextInput
+                placeholder="Start Time"
+                value={dayjs(currentSchedule.startTime).format('hh:mm A')}
+                editable={false}
+                style={styles.input}
+              />
+            </TouchableOpacity>
+            {showStartTimePicker && (
+              <DateTimePicker
+                value={currentSchedule.startTime}
+                mode="time"
+                display="default"
+                onChange={(event, date) => {
+                  setShowStartTimePicker(false);
+                  if (date) handleScheduleChange('startTime', date);
+                }}
+              />
+            )}
+
+            <TouchableOpacity onPress={() => setShowEndTimePicker(true)}>
+              <TextInput
+                placeholder="End Time"
+                value={dayjs(currentSchedule.endTime).format('hh:mm A')}
+                editable={false}
+                style={styles.input}
+              />
+            </TouchableOpacity>
+            {showEndTimePicker && (
+              <DateTimePicker
+                value={currentSchedule.endTime}
+                mode="time"
+                display="default"
+                onChange={(event, date) => {
+                  setShowEndTimePicker(false);
+                  if (date) handleScheduleChange('endTime', date);
+                }}
+              />
+            )}
+
+            <TextInput placeholder="Mode" style={styles.input} value={currentSchedule.mode} onChangeText={text => handleScheduleChange('mode', text)} />
+            <TextInput
+              placeholder="Room"
+              style={styles.input}
+              value={currentSchedule.room}
+              onChangeText={text => handleScheduleChange('room', text)}
+              editable={currentSchedule.mode !== 'online'}
+            />
+
+            <Button
+              mode="contained"
+              onPress={addScheduleEntry}
+              style={styles.addBtn}
+            >
+              Add Schedule Entry
+            </Button>
+
+            <FlatList
+              data={schedule}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={({ item, index }) => (
+                <List.Item
+                  title={`${item.day} - ${item.subject}`}
+                  description={`Time: ${item.startTime} to ${item.endTime} | Mode: ${item.mode} | Room: ${item.room}`}
+                  right={() => (
+                    <Button onPress={() => removeScheduleEntry(index)}>Delete</Button>
+                  )}
+                />
+              )}
+            />
+          </>
+        )}
+
+        <Button
+          mode="contained"
+          onPress={handleSubmit}
+          disabled={loading}
+          style={styles.signupBtn}
+        >
+          {loading ? 'Signing Up...' : 'Sign Up'}
+        </Button>
+        <TouchableOpacity onPress={() => navigation.navigate('Dashboard')}>
+          <Text style={styles.backLink}>BackToDashboard</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: spacing.lg,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: spacing.xl,
+    padding: 20,
+    backgroundColor: 'white',
+    flexGrow: 1,
   },
   title: {
-    ...typography.h4,
-    color: colors.text,
-    marginTop: spacing.md,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    ...typography.body2,
-    color: colors.textSecondary,
+    fontSize: 30,
+    fontWeight: '600',
     textAlign: 'center',
+    color: '#117927',
+    marginBottom: 20,
   },
   form: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: spacing.lg,
-    elevation: 2,
-  },
-  sectionTitle: {
-    ...typography.h6,
-    color: colors.text,
-    marginBottom: spacing.md,
-    marginTop: spacing.lg,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: 10,
   },
   input: {
-    marginBottom: spacing.md,
-  },
-  halfInput: {
-    width: '48%',
-  },
-  fieldLabel: {
-    ...typography.body1,
-    color: colors.text,
-    marginBottom: spacing.sm,
-    fontWeight: '500',
+    borderColor: '#e5e7eb',
+    borderWidth: 1,
+    borderRadius: 6,
+    padding: 10,
+    marginBottom: 10,
+    backgroundColor: 'white',
   },
   genderContainer: {
     flexDirection: 'row',
-    marginBottom: spacing.md,
+    justifyContent: 'space-evenly',
+    marginBottom: 10,
   },
-  genderOption: {
+  genderItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: spacing.xl,
   },
-  genderText: {
-    ...typography.body1,
-    color: colors.text,
-    marginLeft: spacing.xs,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#117927',
+    marginTop: 20,
+    marginBottom: 10,
   },
-  roleContainer: {
-    flexDirection: 'row',
-    marginBottom: spacing.md,
+  label: {
+    fontWeight: 'bold',
+    marginBottom: 4,
+    color: '#117927'
   },
-  roleOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: spacing.lg,
+  addBtn: {
+    backgroundColor: '#ff2a1b',
+    marginVertical: 10,
   },
-  roleText: {
-    ...typography.body1,
-    color: colors.text,
-    marginLeft: spacing.xs,
+  signupBtn: {
+    backgroundColor: '#ff2a1b',
+    marginVertical: 10,
   },
-  departmentContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: spacing.md,
-  },
-  departmentChip: {
-    margin: spacing.xs,
-    backgroundColor: colors.lightGray,
-  },
-  selectedDepartmentChip: {
-    backgroundColor: colors.primary,
-  },
-  departmentChipText: {
-    color: colors.text,
-  },
-  selectedDepartmentChipText: {
-    color: colors.white,
-  },
-  submitButton: {
-    marginTop: spacing.lg,
-    backgroundColor: colors.primary,
-  },
-  submitButtonContent: {
-    paddingVertical: spacing.sm,
+  backLink: {
+    color: '#0f172a',
+    textAlign: 'center',
+    textDecorationLine: 'underline',
+    fontSize: 14,
   },
 });
 
+export default SignUp;
