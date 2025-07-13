@@ -19,7 +19,11 @@ export const useLogin = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uniId, password }),
       });
-
+      if(res.status !== 200) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Login failed');
+        Toast.show({ type: 'error', text1: 'Login Failed', text2: errorData.error || 'Login failed' });
+      }
       const data = await res.json();
       setAuthUser(data);
       console.log("Login returned token:", data.token);
