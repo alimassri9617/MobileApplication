@@ -313,7 +313,6 @@
 
 // export default NotesScreen;
 
-
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -359,7 +358,6 @@ const NotesScreen = () => {
     color: 'default',
   });
 
-  // Allowed categories must match backend accepted colors exactly
   const categories = ['default', 'study', 'work', 'personal', 'ideas', 'reminders', 'projects'];
 
   const categoryColors = {
@@ -391,13 +389,10 @@ const NotesScreen = () => {
 
   const handleCreateOrUpdate = async () => {
     if (!newNote.title.trim() || !newNote.content.trim()) {
-     if(os.platform === 'ios') {
       Alert.alert('Error', 'Please fill in both title and content');
-     }
       return;
     }
 
-    // Validate color against allowed categories
     if (!categories.includes(newNote.color)) {
       Alert.alert('Error', 'Invalid color category selected.');
       return;
@@ -406,8 +401,10 @@ const NotesScreen = () => {
     try {
       if (editingNote) {
         await updateNote(editingNote._id, newNote);
+        onRefresh();
       } else {
         await createNote(newNote);
+        NotesScreen();;
       }
       setModalVisible(false);
       setEditingNote(null);
@@ -427,44 +424,14 @@ const NotesScreen = () => {
     setModalVisible(true);
   };
 
-  // const handleDeleteNote = (noteId) => {
-  //   console.log('Delete button pressed for note ID:', noteId); // Log first to confirm button press
-
-  //   Alert.alert(
-  //     'Delete Note',
-  //     'Are you sure you want to delete this note?',
-  //     [
-  //       { text: 'Cancel', style: 'cancel' },
-  //       {
-  //         text: 'Delete',
-  //         style: 'destructive',
-  //         onPress: () => {
-  //           console.log('Confirmed deletion for note ID:', noteId);
-  //           (async () => {
-  //             try {
-  //               await deleteNote(noteId);
-  //               console.log('Note deleted:', noteId);
-  //             } catch (error) {
-  //               Alert.alert('Error', 'Failed to delete note');
-  //               console.error(error);
-  //             }
-  //           })();
-  //         },
-  //       },
-  //     ],
-  //     { cancelable: true }
-  //   );
-  // };
-const handleDeleteNote = async (noteId) => {
-  console.log('Delete button pressed for note ID:', noteId);
-
-  try {
-    await deleteNote(noteId);
-    console.log('Note deleted:', noteId);
-  } catch (error) {
-    console.error('Failed to delete note:', error);
-  }
-};
+  const handleDeleteNote = async (noteId) => {
+    try {
+      await deleteNote(noteId);
+    } catch (error) {
+      console.error('Failed to delete note:', error);
+      Alert.alert('Error', 'Failed to delete the note.');
+    }
+  };
 
   const renderNote = ({ item }) => (
     <Card style={styles.noteCard}>

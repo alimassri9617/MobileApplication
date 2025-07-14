@@ -1021,6 +1021,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ScrollView,
+  Image,
 } from 'react-native';
 import {
   Card,
@@ -1156,6 +1157,9 @@ const LostAndFoundScreen = () => {
               {new Date(item.createdAt).toLocaleDateString()}
             </Text>
           </View>
+          <Image source={{ uri: item.image }} style={{ width: '100%', height: 150, marginBottom: 8, borderRadius: 6 }} resizeMode="cover" /> 
+
+          
         </View>
       </Card.Content>
     </Card>

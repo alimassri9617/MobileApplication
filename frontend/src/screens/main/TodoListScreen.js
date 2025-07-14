@@ -29,8 +29,8 @@ export default function TodoListScreen() {
   const [editTodo, setEditTodo] = useState(null);
 
   const toggleTodo = (todo) => {
-    updateTodo(todo._id, { ...todo, completed: !todo.completed });
-  };
+      updateTodo(todo._id, { ...todo, completed: !todo.completed });
+};  
 
   const handleDeleteTodo = (todoId) => {
     deleteTodo(todoId);

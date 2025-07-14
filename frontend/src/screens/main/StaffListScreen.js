@@ -8,32 +8,24 @@ import {
   TextInput,
   Linking,
 } from 'react-native';
-import { Avatar, Card, Chip } from 'react-native-paper';
+import { Avatar, Card } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetStaff } from '../../hooks/useGetStaff';
 import { colors, spacing, typography } from '../../constants/theme';
 
 export default function StaffListScreen() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('All');
   const { loading, staff } = useGetStaff();
 
-  const departments = ['All', 'Computer Science', 'Engineering', 'Business', 'Arts', 'Science'];
-
   const filteredStaff = (staff || []).filter((member) => {
-    const dept = member?.department || '';
     const first = member?.firstName || '';
     const last = member?.lastName || '';
 
     const matchesSearch =
       first.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      last.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dept.toLowerCase().includes(searchTerm.toLowerCase());
+      last.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesDepartment =
-      selectedDepartment === 'All' || dept === selectedDepartment;
-
-    return matchesSearch && matchesDepartment;
+    return matchesSearch;
   });
 
   const handleCall = (phoneNumber) => {
@@ -57,7 +49,6 @@ export default function StaffListScreen() {
               {item.firstName} {item.lastName}
             </Text>
             <Text style={styles.staffTitle}>{item.title}</Text>
-            <Text style={styles.staffDepartment}>{item.department}</Text>
           </View>
         </View>
 
@@ -116,33 +107,6 @@ export default function StaffListScreen() {
           placeholder="Search staff members..."
           value={searchTerm}
           onChangeText={setSearchTerm}
-        />
-      </View>
-
-      {/* Department Filter */}
-      <View style={styles.filterContainer}>
-        <FlatList
-          data={departments}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <Chip
-              selected={selectedDepartment === item}
-              onPress={() => setSelectedDepartment(item)}
-              style={[
-                styles.departmentChip,
-                selectedDepartment === item && styles.selectedChip,
-              ]}
-              textStyle={[
-                styles.chipText,
-                selectedDepartment === item && styles.selectedChipText,
-              ]}
-            >
-              {item}
-            </Chip>
-          )}
-          keyExtractor={(item) => item}
-          contentContainerStyle={styles.chipContainer}
         />
       </View>
 

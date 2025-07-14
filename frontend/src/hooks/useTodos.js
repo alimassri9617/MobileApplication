@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '../store/AuthStore';
+import axios from 'axios';
 
 export const useTodos = () => {
   const [loading, setLoading] = useState(false);
@@ -72,30 +73,18 @@ export const useTodos = () => {
     }
   };
 
-  const updateTodo = async (todoId, todoData) => {
-    
+  const updateTodo = async (id, updates) => {
     try {
-      const res = await fetch(`http://127.0.0.1:5000/api/todo/${todoId}`, {
-       
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(todoData),
+      const res = await axios.put(`http://localhost:5000/api/todos/${id}`, updates, {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      const data = await res.json();
-      if(!data) {
-        console.log(todoId,todoData);
-        throw new Error('No data returned from update');
-      }
-
-      if (!res.ok) throw new Error(data.message || 'Failed to update todo');
-
-      setTodos((prev) => prev.map((todo) => (todo._id === todoId ? data : todo)));
+      // Update state instantly
+      setTodos((prev) =>
+        prev.map((todo) => (todo._id === id ? res.data : todo))
+      );
     } catch (error) {
-      Toast.show({ type: 'error', text1: 'Update error', text2: error.message });
+      alert(error.response?.data?.message || 'Failed to update todo');
     }
   };
 
